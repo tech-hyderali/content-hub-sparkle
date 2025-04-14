@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { FileText, FileImage, FileVideo, MoreVertical, Download, Trash, Share2 } from "lucide-react";
+import { FileText, FileImage, FileVideo, MoreVertical, Download, Trash, Share2, Star } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ResourceType {
   id: string;
@@ -26,6 +27,8 @@ interface ResourceCardProps {
 }
 
 export function ResourceCard({ resource, onClick }: ResourceCardProps) {
+  const { toast } = useToast();
+  
   const getIcon = () => {
     switch (resource.type) {
       case "document":
@@ -52,6 +55,39 @@ export function ResourceCard({ resource, onClick }: ResourceCardProps) {
     }
   };
 
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Download Started",
+      description: `Downloading ${resource.name}`,
+    });
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Share Resource",
+      description: `Sharing options for ${resource.name}`,
+    });
+  };
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Added to Favorites",
+      description: `${resource.name} has been added to favorites`,
+    });
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Delete Resource",
+      description: `${resource.name} would be deleted in a real implementation`,
+      variant: "destructive",
+    });
+  };
+
   return (
     <Card 
       className="resource-card cursor-pointer overflow-hidden" 
@@ -71,15 +107,19 @@ export function ResourceCard({ resource, onClick }: ResourceCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownload}>
                   <Download className="mr-2 h-4 w-4" />
                   <span>Download</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShare}>
                   <Share2 className="mr-2 h-4 w-4" />
                   <span>Share</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem onClick={handleFavorite}>
+                  <Star className="mr-2 h-4 w-4" />
+                  <span>Add to Favorites</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                   <Trash className="mr-2 h-4 w-4" />
                   <span>Delete</span>
                 </DropdownMenuItem>

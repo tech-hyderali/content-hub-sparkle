@@ -1,10 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResourceCard, ResourceType } from "./ResourceCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Grid, List } from "lucide-react";
+import { Search, Filter, Grid, List, Plus, Upload } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ResourceLibrary() {
+  const { toast } = useToast();
   // This would come from Supabase in a real implementation
   const mockResources: ResourceType[] = [
     {
@@ -78,21 +80,79 @@ export function ResourceLibrary() {
     },
   ];
 
+  const recentResources = mockResources.slice(0, 3);
+  const favoriteResources = [mockResources[1], mockResources[3], mockResources[6]];
+  const sharedResources = [mockResources[0], mockResources[7]];
+
+  const [resources, setResources] = useState<ResourceType[]>(mockResources);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["document", "image", "video", "other"]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredResources = mockResources.filter((resource) => {
-    const matchesSearch = resource.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedTypes.includes(resource.type);
-    return matchesSearch && matchesType;
-  });
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleResourceClick = (resource: ResourceType) => {
+    toast({
+      title: `${resource.name}`,
+      description: `Type: ${resource.type}, Size: ${resource.size}`,
+    });
+  };
+
+  const handleAddResource = () => {
+    toast({
+      title: "Add Resource",
+      description: "This would open a file upload dialog in a real implementation.",
+    });
+  };
+
+  const handleTabChange = (value: string) => {
+    setIsLoading(true);
+    setActiveTab(value);
+    
+    // Simulate loading delay
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+  };
+
+  const filteredResources = (activeResources: ResourceType[]) => {
+    return activeResources.filter((resource) => {
+      const matchesSearch = resource.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = selectedTypes.includes(resource.type);
+      return matchesSearch && matchesType;
+    });
+  };
+
+  const getActiveResources = () => {
+    switch (activeTab) {
+      case "recent":
+        return filteredResources(recentResources);
+      case "favorites":
+        return filteredResources(favoriteResources);
+      case "shared":
+        return filteredResources(sharedResources);
+      default:
+        return filteredResources(resources);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
-        <p className="text-muted-foreground">Manage your content resources</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
+          <p className="text-muted-foreground">Manage your content resources</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleAddResource} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add Resource
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -103,7 +163,7 @@ export function ResourceLibrary() {
             placeholder="Search resources..."
             className="pl-8"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -188,48 +248,48 @@ export function ResourceLibrary() {
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="recent">Recent</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
           <TabsTrigger value="shared">Shared</TabsTrigger>
         </TabsList>
-        <TabsContent value="all" className="mt-6">
-          {filteredResources.length > 0 ? (
-            <div className={viewMode === "grid" 
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" 
-              : "flex flex-col gap-4"
-            }>
-              {filteredResources.map((resource) => (
-                <ResourceCard key={resource.id} resource={resource} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-center bg-muted rounded-lg">
-              <Search className="h-10 w-10 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">No resources found</h3>
-              <p className="text-muted-foreground">
-                Try adjusting your search or filter to find what you're looking for.
-              </p>
-            </div>
-          )}
-        </TabsContent>
-        <TabsContent value="recent">
-          <div className="flex flex-col items-center justify-center p-8 text-center bg-muted rounded-lg">
-            <p>Recent resources will appear here. Connect Supabase to enable this feature.</p>
+        
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
-        </TabsContent>
-        <TabsContent value="favorites">
-          <div className="flex flex-col items-center justify-center p-8 text-center bg-muted rounded-lg">
-            <p>Your favorite resources will appear here. Connect Supabase to enable this feature.</p>
-          </div>
-        </TabsContent>
-        <TabsContent value="shared">
-          <div className="flex flex-col items-center justify-center p-8 text-center bg-muted rounded-lg">
-            <p>Shared resources will appear here. Connect Supabase to enable this feature.</p>
-          </div>
-        </TabsContent>
+        ) : (
+          <TabsContent value={activeTab} className="mt-6">
+            {getActiveResources().length > 0 ? (
+              <div className={viewMode === "grid" 
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" 
+                : "flex flex-col gap-4"
+              }>
+                {getActiveResources().map((resource) => (
+                  <ResourceCard 
+                    key={resource.id} 
+                    resource={resource} 
+                    onClick={() => handleResourceClick(resource)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center bg-muted rounded-lg">
+                <Search className="h-10 w-10 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No resources found</h3>
+                <p className="text-muted-foreground">
+                  Try adjusting your search or filter to find what you're looking for.
+                </p>
+                <Button variant="outline" className="mt-4" onClick={handleAddResource}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload New Resource
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
