@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, File, FileImage, FileVideo, Film, Layout } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Dashboard() {
   // Mock stats - these would come from Supabase in the real implementation
